@@ -6,7 +6,11 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Scanner;
 
-public class JavaSoundRecorder {
+/**
+ * A sample program is to demonstrate how to record sound in Java
+ * author: www.codejava.net
+ */
+public class TCPClient {
     /**Preferencias**/
     float sampleRate = 44100;
     int sampleSizeInBits = 16;
@@ -16,15 +20,14 @@ public class JavaSoundRecorder {
     int buffer_size = 1024;
     int porta = 6789;
     /****/
-
-    private final boolean escolha;
     boolean on;
     Socket clientSocket;
     String ip;
+    String mix;
 
-    public JavaSoundRecorder(String ip,boolean escolha){
+    public TCPClient(String ip,String mix){
         this.ip=ip;
-        this.escolha=escolha;
+        this.mix=mix;
     }
     // the line from which audio data is captured
     TargetDataLine line;
@@ -45,6 +48,7 @@ public class JavaSoundRecorder {
             out("Conectado ao servidor " + ip + ":"+porta);
             out("Recebendo configurações");
             DataInputStream fromServer = new DataInputStream(clientSocket.getInputStream());
+            DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
             sampleRate= fromServer.readFloat();
             sampleSizeInBits = fromServer.readInt();
             channels = fromServer.readInt();
@@ -59,6 +63,7 @@ public class JavaSoundRecorder {
             out(bigEndian+"");
             out(buffer_size+"");
 
+            out.writeBoolean(true);
 
             AudioFormat format = getAudioFormat();
             DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
@@ -69,32 +74,13 @@ public class JavaSoundRecorder {
                 System.exit(0);
             }
             Mixer.Info[] mixerInfos = AudioSystem.getMixerInfo();
-            if(escolha) {
-                Scanner s = new Scanner(System.in);
-                for (int i = 0; i < mixerInfos.length; i++) {
-                    try {
-                        line = (TargetDataLine) AudioSystem.getMixer(mixerInfos[i]).getLine(info);
-                        out("Opcao " + i + ": " + mixerInfos[i]);
-                    } catch (Exception e) {
-                        //System.err.println(e);
-                    }
-                }
-                try {
-                    int i = s.nextInt();
-                    line = (TargetDataLine) AudioSystem.getMixer(mixerInfos[i]).getLine(info);
-                    out("Opcao " + i + ": " + mixerInfos[i]);
-                } catch (Exception e) {
-                    //System.err.println(e);
-                }
 
-            }else{
-                try {
-                    int i;
-                    for (i = 0; i < mixerInfos.length; i++) {if(mixerInfos[i].toString().contains("Stereo Mix"))break;}
-                    line = (TargetDataLine) AudioSystem.getMixer(mixerInfos[i]).getLine(info);
-                } catch (Exception e) {
-                    //System.err.println(e);
-                }
+            try {
+                int i;
+                for (i = 0; i < mixerInfos.length; i++) {if(mixerInfos[i].toString().contains(mix))break;}
+                line = (TargetDataLine) AudioSystem.getMixer(mixerInfos[i]).getLine(info);
+            } catch (Exception e) {
+                //System.err.println(e);
             }
 
             if (line == null) {
@@ -108,11 +94,9 @@ public class JavaSoundRecorder {
 
 
 
-
             byte buf[] = new byte[buffer_size];
             int bytesIn;
             on=true;
-            DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
             while(on) {
                 bytesIn = line.read(buf, 0, buf.length);
                 out.write(buf, 0, bytesIn);
@@ -143,24 +127,6 @@ public class JavaSoundRecorder {
         out("Finished");
     }
 
-    /**
-     * Entry to run the program
-     */
-    public static void main(String[] args) {
-        if(args.length!=2 || args[0].equals("help")){
-            printHelp();
-            System.exit(0);
-        }
-        else if(args[1].equals("0")) new JavaSoundRecorder(args[0],false).start();
-        else if(args[1].equals("1")) new JavaSoundRecorder(args[0],true).start();
-        else{
-            out("Opcao desconhecida");
-            printHelp();
-            System.exit(0);
-        }
-
-
-    }
 
     private static void printHelp() {
         out("Digite o ip do computador de destino, por exemplo 192.168.0.100" +
