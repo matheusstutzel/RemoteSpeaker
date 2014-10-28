@@ -9,6 +9,12 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Scanner;
 
+
+/**
+ * http://michieldemey.be/blog/network-discovery-using-udp-broadcast/
+ * http://stackoverflow.com/questions/14542226/get-clients-on-the-network-discover-the-server
+ * http://www.gemstone.com/docs/html/gemfire/6.0.0/SystemAdministratorsGuide/discovery_communication.5.5.html
+ */
 class TCPServer {
     /**Preferencias**/
     float sampleRate = 44100;
@@ -29,7 +35,7 @@ class TCPServer {
     public TCPServer(boolean escolha) throws Exception {
         ServerSocket welcomeSocket = new ServerSocket(porta);
         out("Servidor criado na porta "+porta);
-
+        new Thread(DiscoveryThread.getInstance()).start();
         AudioFormat format = getAudioFormat();
         DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
 
@@ -92,11 +98,10 @@ class TCPServer {
                                 //int aux = inFromClient.read(buff);
                                 line.write(buff, 0, buff.length);
                                 Arrays.fill(buff, (byte) 0);
-                            } catch (SocketException e) {
+                            }catch (IOException e) {
                                 out("Cliente desconectado " + info);
-                                break;
-                            } catch (IOException e) {
                                 e.printStackTrace();
+                                break;
                             }
                     }
                 }
