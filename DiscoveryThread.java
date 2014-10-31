@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.text.SimpleDateFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,7 +21,7 @@ public class DiscoveryThread implements Runnable {
             socket.setBroadcast(true);
 
             while (true) {
-                System.out.println(getClass().getName() + ">>>Ready to receive broadcast packets!");
+               out(getClass().getName() + ">>>Ready to receive broadcast packets!");
 
                 //Receive a packet
                 byte[] recvBuf = new byte[15000];
@@ -28,8 +29,8 @@ public class DiscoveryThread implements Runnable {
                 socket.receive(packet);
 
                 //Packet received
-                System.out.println(getClass().getName() + ">>>Discovery packet received from: " + packet.getAddress().getHostAddress());
-                System.out.println(getClass().getName() + ">>>Packet received; data: " + new String(packet.getData()));
+                out(getClass().getName() + ">>>Discovery packet received from: " + packet.getAddress().getHostAddress());
+                out(getClass().getName() + ">>>Packet received; data: " + new String(packet.getData()));
 
                 //See if the packet holds the right command (message)
                 String message = new String(packet.getData()).trim();
@@ -40,12 +41,16 @@ public class DiscoveryThread implements Runnable {
                     DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, packet.getAddress(), packet.getPort());
                     socket.send(sendPacket);
 
-                    System.out.println(getClass().getName() + ">>>Sent packet to: " + sendPacket.getAddress().getHostAddress());
+                    out(getClass().getName() + ">>>Sent packet to: " + sendPacket.getAddress().getHostAddress());
                 }
             }
         } catch (IOException ex) {
             Logger.getLogger(DiscoveryThread.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    private void out(String s) {
+        System.out.println(new SimpleDateFormat("HH:mm dd/MM/yyyy").format(System.currentTimeMillis())+" - "+s);
     }
 
     public static DiscoveryThread getInstance() {

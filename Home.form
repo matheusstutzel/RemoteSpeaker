@@ -100,7 +100,7 @@
                   <component id="1478d" class="javax.swing.JTextArea" binding="asdasdTextArea" default-binding="true">
                     <constraints/>
                     <properties>
-                      <text value="asdasd"/>
+                      <text value=""/>
                     </properties>
                   </component>
                 </children>
@@ -121,15 +121,15 @@
                       <text value="Ativo"/>
                     </properties>
                   </component>
-                  <component id="273ab" class="javax.swing.JLabel">
+                  <component id="273ab" class="javax.swing.JLabel" binding="myIPLabel">
                     <constraints>
                       <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                     </constraints>
                     <properties>
-                      <text value="192.168.0.this"/>
+                      <text value=""/>
                     </properties>
                   </component>
-                  <component id="25094" class="javax.swing.JLabel">
+                  <component id="25094" class="javax.swing.JLabel" binding="activeLabel">
                     <constraints>
                       <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                     </constraints>
@@ -145,7 +145,7 @@
                       <text value="Endereço"/>
                     </properties>
                   </component>
-                  <component id="e0743" class="javax.swing.JLabel">
+                  <component id="e0743" class="javax.swing.JLabel" binding="clientCont">
                     <constraints>
                       <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                     </constraints>

@@ -2,6 +2,7 @@ import sun.audio.AudioPlayer;
 import sun.audio.AudioStream;
 
 import javax.sound.sampled.*;
+import javax.swing.*;
 import java.io.*;
 import java.net.*;
 import java.text.SimpleDateFormat;
@@ -16,6 +17,9 @@ import java.util.Scanner;
  * http://www.gemstone.com/docs/html/gemfire/6.0.0/SystemAdministratorsGuide/discovery_communication.5.5.html
  */
 class TCPServer {
+    private static JTextArea out;
+    private final JLabel clientCont;
+    String mix;
     /**Preferencias**/
     float sampleRate = 44100;
     int sampleSizeInBits = 16;
@@ -32,98 +36,109 @@ class TCPServer {
     }
     static SourceDataLine line;
 
-    public TCPServer(boolean escolha) throws Exception {
-        ServerSocket welcomeSocket = new ServerSocket(porta);
-        out("Servidor criado na porta "+porta);
-        new Thread(DiscoveryThread.getInstance()).start();
-        AudioFormat format = getAudioFormat();
-        DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
+    public void start(){
+        try{
+            ServerSocket welcomeSocket = new ServerSocket(porta);
+            out("Servidor criado na porta "+porta);
+            new Thread(DiscoveryThread.getInstance()).start();
+            AudioFormat format = getAudioFormat();
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
 
-        // checks if system supports the data line
-        if (!AudioSystem.isLineSupported(info)) {
-            out("Line not supported");
-            System.exit(0);
-        }
-        if(escolha) {
-            Mixer.Info[] mixerInfos = AudioSystem.getMixerInfo();
-            Scanner s = new Scanner(System.in);
-            for (int i = 0; i < mixerInfos.length; i++) {
-                try {
-                    line = (SourceDataLine) AudioSystem.getMixer(mixerInfos[i]).getLine(info);
-                    out("Opcao " + i + ": " + mixerInfos[i]);
-                } catch (Exception e) {
-                    //System.err.println(e);
-                }
+            // checks if system supports the data line
+            if (!AudioSystem.isLineSupported(info)) {
+                out("Line not supported");
+                System.exit(0);
             }
+            Mixer.Info[] mixerInfos = AudioSystem.getMixerInfo();
+
             try {
-                int i = s.nextInt();
+                int i;
+                for (i = 0; i < mixerInfos.length; i++) {if(mixerInfos[i].toString().contains(mix))break;}
                 line = (SourceDataLine) AudioSystem.getMixer(mixerInfos[i]).getLine(info);
-                out("Opcao " + i + ": " + mixerInfos[i]);
             } catch (Exception e) {
                 //System.err.println(e);
             }
+
             if (line == null) {
-                out("Não deu certo");
                 line = (SourceDataLine) AudioSystem.getLine(info);
             }
-        }else {
-            line = (SourceDataLine) AudioSystem.getLine(info);
-        }
-        out("Reproduzindo pela linha: " + line.getLineInfo());
-        line.open(format);
-        line.start();
-        while (true) {
-            serverSocket = welcomeSocket.accept();
-            out("Cliente conectado: "+serverSocket.getRemoteSocketAddress());
-            out("Enviando configurações");
-            DataOutputStream toClient = new DataOutputStream(serverSocket.getOutputStream());
-            toClient.writeFloat(sampleRate);
-            toClient.writeInt(sampleSizeInBits);
-            toClient.writeInt(channels);
-            toClient.writeBoolean(signed);
-            toClient.writeBoolean(bigEndian);
-            toClient.writeInt(buffer_size);
-            if(new DataInputStream(serverSocket.getInputStream()).readBoolean()) {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        byte buff[] = new byte[buffer_size];
-                        String info = serverSocket.getRemoteSocketAddress() + "";
-                        Socket connectionSocket = serverSocket;
-                        while (true)
-                            try {
-                                DataInputStream inFromClient = new DataInputStream(connectionSocket.getInputStream());
+            out("Reproduzindo pela linha: " + line.getLineInfo());
+            line.open(format);
+            line.start();
+            while (true) {
+                serverSocket = welcomeSocket.accept();
+                out("Cliente conectado: "+serverSocket.getRemoteSocketAddress());
+                out("Enviando configurações");
+                DataOutputStream toClient = new DataOutputStream(serverSocket.getOutputStream());
+                toClient.writeFloat(sampleRate);
+                toClient.writeInt(sampleSizeInBits);
+                toClient.writeInt(channels);
+                toClient.writeBoolean(signed);
+                toClient.writeBoolean(bigEndian);
+                toClient.writeInt(buffer_size);
+                if(new DataInputStream(serverSocket.getInputStream()).readBoolean()) {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            out("Conexão bem sucedida");
+                            maisClient();
+                            byte buff[] = new byte[buffer_size];
+                            String info = serverSocket.getRemoteSocketAddress() + "";
+                            Socket connectionSocket = serverSocket;
+                            while (true)
+                                try {
+                                    DataInputStream inFromClient = new DataInputStream(connectionSocket.getInputStream());
 
-                                inFromClient.readFully(buff);
-                                //int aux = inFromClient.read(buff);
-                                line.write(buff, 0, buff.length);
-                                Arrays.fill(buff, (byte) 0);
-                            }catch (IOException e) {
-                                out("Cliente desconectado " + info);
-                                e.printStackTrace();
-                                break;
-                            }
+                                    inFromClient.readFully(buff);
+                                    //int aux = inFromClient.read(buff);
+                                    line.write(buff, 0, buff.length);
+                                    Arrays.fill(buff, (byte) 0);
+                                }catch (IOException e) {
+                                    out("Cliente desconectado " + info);
+                                    menosClient();
+
+                                    e.printStackTrace();
+                                    break;
+                                }
+                        }
                     }
+                    ).start();
+                }else{
+                    out("Erro na conexao com o cliente: "+serverSocket.getRemoteSocketAddress());
                 }
-                ).start();
-            }else{
-                out("Erro na conexao com o cliente: "+serverSocket.getRemoteSocketAddress());
             }
-        }
-    }
-    public static void main(String args[]) throws Exception {
-        if(args.length!=1 || args[0].equals("help"))printHelp();
-        else if(args[0].equals("0"))new TCPServer(false);
-        else if(args[0].equals("1"))new TCPServer(true);
-        else{
-            out("Opcao desconhecida");
-            printHelp();
+        }catch (Exception e){
+            e.printStackTrace();
         }
     }
 
+    private void menosClient() {
+        clientCont.setText((Integer.parseInt(clientCont.getText())-1)+"");
+    }
+
+    private void maisClient() {
+        clientCont.setText((Integer.parseInt(clientCont.getText())+1)+"");
+    }
+
+    public TCPServer(String mix,JTextArea out,JLabel cont) {
+        TCPServer.out=out;
+        this.mix=mix;
+        clientCont=cont;
+    }
+
+    public void finish(){
+        line.stop();
+        line.close();
+        try{
+            serverSocket.close();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        out("Finished");
+    }
     public static void out(String a){
-
-        System.out.println(new SimpleDateFormat("HH:mm dd/MM/yyyy").format(System.currentTimeMillis())+" - "+a);
+        out.append(a+"\n");
+        System.out.println(new SimpleDateFormat("HH:mm dd/MM/yyyy").format(System.currentTimeMillis()) + " - " + a);
     }
     private static void printHelp() {
         out("Digite:" +

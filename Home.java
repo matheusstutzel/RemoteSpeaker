@@ -34,12 +34,73 @@ public class Home {
     public  JPanel RemoteSpeaker;
     public  JButton conectarAoServidorButton;
     private JButton atualizarButton;
+    private JLabel activeLabel;
+    private JLabel myIPLabel;
+    private JLabel clientCont;
     public  DefaultListModel lista1;
-    Thread client;
+    Thread client,server;
     TCPClient Client;
-    private boolean Conectado;
+    TCPServer Server;
+    private boolean Conectado,servidor;
+    private static final String validIP="(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}";
 
     public Home() {
+        setClient();
+        setServidor();
+    }
+
+
+
+    private void setServidor() {
+        activeLabel.setText("Não");
+        servidor=false;
+        String ip;
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface iface = interfaces.nextElement();
+                // filters out 127.0.0.1 and inactive interfaces
+                if (iface.isLoopback() || !iface.isUp())
+                    continue;
+
+                Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                while(addresses.hasMoreElements()) {
+                    InetAddress addr = addresses.nextElement();
+                    ip = addr.getHostAddress();
+                    if(ip.matches(validIP))
+                        myIPLabel.setText(myIPLabel.getText()+","+ip);
+                }
+            }
+            myIPLabel.setText(myIPLabel.getText().replaceFirst(",", ""));
+        } catch (SocketException e) {
+            throw new RuntimeException(e);
+        }
+        iniciarButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(servidor){
+                    Server.finish();
+                    server.stop();
+                    servidor=false;
+                    iniciarButton.setText("Iniciar");
+                }
+                else{
+                    Server=new TCPServer((String) comboBox2.getSelectedItem(),asdasdTextArea,clientCont);
+                    server=new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Server.start();
+                        }
+                    });
+                    server.start();
+                    servidor=true;
+                    iniciarButton.setText("Parar servidor");
+                }
+            }
+        });
+    }
+
+    private void setClient() {
         DefaultComboBoxModel comb = new DefaultComboBoxModel();
         for (Mixer.Info info : AudioSystem.getMixerInfo()) {
             comb.addElement(info.toString());
@@ -50,7 +111,7 @@ public class Home {
         list1.addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
-                conectarAoServidorButton.setText("Conectar ao servidor: " + lista1.getElementAt(list1.getSelectedIndex()));
+                conectarAoServidorButton.setText("Conectar");
                 conectarAoServidorButton.enable(true);
             }
         });
@@ -102,7 +163,6 @@ public class Home {
             }
         });
     }
-
 
 
     private void procuraServidores() {
@@ -199,6 +259,10 @@ public class Home {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
+    }
+
+    private void createUIComponents() {
+        // TODO: place custom component creation code here
     }
 }
 
