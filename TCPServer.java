@@ -30,6 +30,10 @@ class TCPServer {
     int porta = 6789;
     /****/
     static Socket serverSocket;
+    private Thread discover;
+    private DiscoveryThread discovery;
+    private ServerSocket welcomeSocket;
+
     AudioFormat getAudioFormat() {
         return new AudioFormat(sampleRate, sampleSizeInBits,
                 channels, signed, bigEndian);
@@ -38,9 +42,11 @@ class TCPServer {
 
     public void start(){
         try{
-            ServerSocket welcomeSocket = new ServerSocket(porta);
+            welcomeSocket = new ServerSocket(porta);
             out("Servidor criado na porta "+porta);
-            new Thread(DiscoveryThread.getInstance()).start();
+            discovery=DiscoveryThread.getInstance();
+            discover=new Thread(discovery);
+            discover.start();
             AudioFormat format = getAudioFormat();
             DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
 
@@ -129,7 +135,15 @@ class TCPServer {
     public void finish(){
         line.stop();
         line.close();
+        discovery.stop();
+        try {
+            discover.join();
+            out("Terminou a thread discovery");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         try{
+            welcomeSocket.close();
             serverSocket.close();
         }catch (Exception e){
             e.printStackTrace();

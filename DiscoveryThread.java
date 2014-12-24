@@ -12,6 +12,7 @@ import java.util.logging.Logger;
 public class DiscoveryThread implements Runnable {
 
     DatagramSocket socket;
+    private boolean rodando;
 
     @Override
     public void run() {
@@ -19,8 +20,8 @@ public class DiscoveryThread implements Runnable {
             //Keep a socket open to listen to all the UDP trafic that is destined for this port
             socket = new DatagramSocket(8888, InetAddress.getByName("0.0.0.0"));
             socket.setBroadcast(true);
-
-            while (true) {
+            rodando=true;
+            while (rodando) {
                out(getClass().getName() + ">>>Ready to receive broadcast packets!");
 
                 //Receive a packet
@@ -48,9 +49,13 @@ public class DiscoveryThread implements Runnable {
             Logger.getLogger(DiscoveryThread.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-
     private void out(String s) {
         System.out.println(new SimpleDateFormat("HH:mm dd/MM/yyyy").format(System.currentTimeMillis())+" - "+s);
+    }
+
+    public void stop(){
+        rodando=false;
+        socket.close();
     }
 
     public static DiscoveryThread getInstance() {

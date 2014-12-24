@@ -226,7 +226,7 @@ public class Home {
                         String message = new String(receivePacket.getData()).trim();
                         if (message.equals("DISCOVER_FUIFSERVER_RESPONSE")) {
                             //DO SOMETHING WITH THE SERVER'S IP (for example, store it in your controller)
-                            lista1.addElement(receivePacket.getAddress().toString().replaceAll("/",""));
+                            adicionaNalista(receivePacket.getAddress().toString().replaceAll("/",""));
                         }
                     }
                     //Close the port!
@@ -238,6 +238,14 @@ public class Home {
                 }
             }
         }).start();
+    }
+
+    private void adicionaNalista(String s) {
+        boolean existe = false;
+        for (int i = 0; i < lista1.size() && !existe; i++) {
+            existe=lista1.get(i).equals(s);
+        }
+        if(!existe)lista1.addElement(s);
     }
 
     public static void main(String[] args) {
